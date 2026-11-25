@@ -88,4 +88,6 @@ private:
 	GuiBase* mRemoveChild = nullptr;
 
 	Vec2i mRestoreGameResolution;
+	Vec2i mUltrawideBaseResolution;
+	bool mUltrawideActive = false;
 };

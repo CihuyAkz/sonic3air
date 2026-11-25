@@ -22,11 +22,11 @@
 
 #include "oxygen/application/Application.h"
 #include "oxygen/application/Configuration.h"
+#include "oxygen/application/EngineMain.h"
 #include "oxygen/application/gameview/GameView.h"
 #include "oxygen/application/input/ControlsIn.h"
 #include "oxygen/application/input/InputManager.h"
 #include "oxygen/application/video/VideoOut.h"
-#include "oxygen/engine/EngineMain.h"
 #include "oxygen/helper/FileHelper.h"
 #include "oxygen/menu/imgui/ImGuiManager.h"
 #include "oxygen/menu/imgui/implementations/ImGuiFileBrowser.h"
@@ -157,6 +157,34 @@ void GameApp::update(float timeElapsed)
 	{
 		mGameView->removeChild(*mRemoveChild);
 		mRemoveChild = nullptr;
+	}
+
+	// Adjust the virtual game width for Ultrawide without stretching the image.
+	const bool gameplayVisible = (mCurrentState == State::INGAME && nullptr == mMenuBackground->getParent());
+	if (gameplayVisible)
+	{
+		VideoOut& videoOut = VideoOut::instance();
+		if (Configuration::instance().mUpscaling == 5)
+		{
+			if (!mUltrawideActive)
+			{
+				mUltrawideBaseResolution = videoOut.getScreenSize();
+				mUltrawideActive = true;
+			}
+
+			const Rectf screenRect = FTX::screenRect();
+			const float maxSupportedAspectRatio = 31.0f / 14.0f; // 496x224 is the supported maximum virtual resolution
+			const float screenAspectRatio = (screenRect.height > 0.0f) ? screenRect.getAspectRatio() : maxSupportedAspectRatio;
+			const float targetAspectRatio = std::min(screenAspectRatio, maxSupportedAspectRatio);
+			const int targetWidth = std::max(mUltrawideBaseResolution.x, roundToInt((float)mUltrawideBaseResolution.y * targetAspectRatio));
+			if (videoOut.getScreenWidth() != (uint32)targetWidth || videoOut.getScreenHeight() != (uint32)mUltrawideBaseResolution.y)
+				videoOut.setScreenSize(targetWidth, mUltrawideBaseResolution.y);
+		}
+		else if (mUltrawideActive)
+		{
+			videoOut.setScreenSize(mUltrawideBaseResolution);
+			mUltrawideActive = false;
+		}
 	}
 
 	// Make sure the overlay windows are always on top
