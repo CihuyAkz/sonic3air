@@ -1,0 +1,35 @@
+
+Preparation:
+	- You might need to first go through the preparation steps as listed in "Oxygen/sonic3air/_internal/mastering/_mastering_notes.txt"
+	- Go to "app/src/main/assets" and copy from the sonic3air main directory:
+		- data (you can leave out the audio data to make builds faster during development)
+		- scripts
+		- config.json
+
+
+Build with Android Studio:
+	- Open Android Studio
+	- Open this directory as project
+	- Review "abiFilters" setting in "app/build.gradle"
+		- For development it may be set to just one architecture to avoid long build times
+		- For final builds, either disable the setting or enable all four target architectures
+	- Let Gradle do its sync, then Make, and Run
+
+
+Build from the command line:
+	- Make sure the Android SDK platform 36, Android Build Tools 36.0.0, NDK 29.0.14206865, CMake 3.22.1, and JDK 17 are installed.
+	- From this directory, prepare the assets once:
+		- Linux / macOS:
+			mkdir -p app/src/main/assets
+			cp -a ../../data ../../scripts ../../config.json app/src/main/assets/
+		- Windows PowerShell:
+			New-Item -ItemType Directory -Force app/src/main/assets
+			Copy-Item ..\..\data, ..\..\scripts, ..\..\config.json -Destination app\src\main\assets -Recurse -Force
+	- Build a debug APK:
+		- Linux / macOS: chmod +x ./gradlew && ./gradlew assembleDebug
+		- Windows: .\gradlew.bat assembleDebug
+	- The APK is written to app/build/outputs/apk/debug/app-debug.apk.
+
+Automated build:
+	- The GitHub Actions workflow at .github/workflows/android-build.yml builds the debug APK on pushes, pull requests, or manual dispatch.
+	- Download the generated APK from the workflow run's Artifacts section.
