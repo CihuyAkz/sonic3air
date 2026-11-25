@@ -1,0 +1,64 @@
+name: Android Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+
+      - name: Install project SDK packages
+        run: |
+          sdkmanager \
+            "platforms;android-36" \
+            "build-tools;36.0.0" \
+            "ndk;29.0.14206865" \
+            "cmake;3.22.1"
+
+      - name: Prepare game assets
+        shell: bash
+        run: |
+          project="Oxygen/sonic3air/build/_android"
+          assets="$project/app/src/main/assets"
+          mkdir -p "$assets"
+          cp -a Oxygen/sonic3air/data "$assets/data"
+          cp -a Oxygen/sonic3air/scripts "$assets/scripts"
+          cp Oxygen/sonic3air/config.json "$assets/config.json"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Build debug APK
+        working-directory: Oxygen/sonic3air/build/_android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: sonic3air-android-debug
+          path: Oxygen/sonic3air/build/_android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
