@@ -48,6 +48,8 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
+        with:
+          validate-wrappers: false
 
       - name: Build debug APK
         working-directory: Oxygen/sonic3air/build/_android
