@@ -1,22 +1,73 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
+def buildAsLibrary = project.hasProperty('BUILD_AS_LIBRARY')
+def buildAsApplication = !buildAsLibrary
+if (buildAsApplication) {
+    apply plugin: 'com.android.application'
+}
+else {
+    apply plugin: 'com.android.library'
+}
 
-buildscript {
-    repositories {
-        mavenCentral()
-        google()
+android {
+    compileSdkVersion 36
+    ndkVersion "29.0.14206865"
+    defaultConfig {
+        if (buildAsApplication) {
+            namespace "org.eukaryot.sonic3air"
+        }
+        minSdkVersion 23
+        targetSdkVersion 29     // Can't go higher, as requestLegacyExternalStorage in the manifest won't work otherwise
+        versionCode 1
+        versionName "26.03.28.0"
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_APP_PLATFORM=android-23", "-DANDROID_STL=c++_static"
+            }
+        }
     }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:9.2.1'
+    buildTypes {
+        debug {
+            debuggable true
+            minifyEnabled false
+        }
+        release {
+            debuggable false     // Set to true to allow for "Attach debugger" even for signed APKs
+            minifyEnabled false
+        }
+    }
+    namespace 'org.eukaryot.sonic3air'
+    androidResources {
+        ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+    }
+    lint {
+        abortOnError false
+    }
+    if (!project.hasProperty('EXCLUDE_NATIVE_LIBS')) {
+        sourceSets.main {
+            jniLibs.srcDir 'libs'
+        }
+        externalNativeBuild {
+            cmake {
+                path 'jni/CMakeLists.txt'
+            }
+        }
+    }
+
+    if (buildAsLibrary) {
+        libraryVariants.all { variant ->
+            variant.outputs.each { output ->
+                def outputFile = output.outputFile
+                if (outputFile != null && outputFile.name.endsWith(".aar")) {
+                    def fileName = "org.libsdl.app.aar"
+                    output.outputFile = new File(outputFile.parent, fileName)
+                }
+            }
+        }
     }
 }
 
-allprojects {
-    repositories {
-        mavenCentral()
-        google()
-    }
-}
-
-task clean(type: Delete) {
-    delete rootProject.buildDir
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
 }
